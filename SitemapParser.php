@@ -94,7 +94,6 @@ class SitemapParser
      * Constructor
      *
      * @param string $userAgent User-Agent to send with every HTTP(S) request
-     * @param array $config Configuration options
      * @throws SitemapParserException
      */
     public function __construct(string $userAgent = self::DEFAULT_USER_AGENT)
@@ -321,10 +320,10 @@ class SitemapParser
     /**
      * Parse line separated text string
      *
-     * @param string $string
+     * @param ?string $string
      * @return bool
      */
-    protected function parseString($string): bool
+    protected function parseString(?string $string): bool
     {
         if (!isset($this->config['strict']) || $this->config['strict'] !== false) {
             // Strings are not part of any documented sitemap standard
@@ -380,9 +379,11 @@ class SitemapParser
     /**
      * Parse Json object
      *
-     * @param string $type Sitemap or URL
-     * @param SimpleXMLElement $json object
+     * @param string $type
+     * @param SimpleXMLElement $json
      * @return bool
+     * @throws SitemapParserException
+     * @throws TransferException
      */
     protected function parseJson(string $type, SimpleXMLElement $json): bool
     {
