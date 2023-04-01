@@ -1,10 +1,15 @@
 <?php
+require(__DIR__ . '/vendor/autoload.php');
+(new \Dotenv\Dotenv(__DIR__ . '/.'))->load();
+
+use parsers\exceptions\SitemapParserException;
+use parsers\SitemapParser;
+use parsers\View;
 
 require 'SitemapParser.php';
 require 'View.php';
 
-use parsers\SitemapParser;
-use parsers\View;
+
 
 try {
     $parser = new SitemapParser('MyCustomUserAgent');

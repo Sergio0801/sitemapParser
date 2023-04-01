@@ -3,6 +3,7 @@
 namespace parsers;
 
 require 'UrlParser.php';
+require 'HTMLParser.php';
 require 'CurlRequest.php';
 require 'exceptions/SitemapParserException.php';
 require 'exceptions/TransferException.php';
@@ -17,6 +18,7 @@ use SimpleXMLElement;
 class SitemapParser
 {
     use UrlParser;
+    use HTMLParser;
 
     /**
      * Default User-Agent
@@ -49,6 +51,18 @@ class SitemapParser
     private const XML_TAG_URL = 'url';
 
     /**
+     * PARSER_TYPE
+     */
+    private const PARSER_TYPE = 'PARSER_TYPE';
+    private const PARSER_TYPE_XML_DOM = 1;
+    private const PARSER_TYPE_REGULAR_EXPRESS = 2;
+
+
+    /*REGULAR EXPRESSIONS*/
+    private const H1_REGULAR_EXPRES = '/<h1[^>]*>\s*(.*?)\s*<\/h1>/i';
+    private const H2_REGULAR_EXPRES = '/<h2[^>]*>\s*(.*?)\s*<\/h2>/i';
+
+    /**
      * Sitemaps discovered
      * @var array
      */
@@ -67,7 +81,8 @@ class SitemapParser
     protected string $userAgent;
 
     /**
-     * Configuration options
+     * Configuration options to parse websites
+     *
      * @var array
      */
     protected array $config = [];
@@ -103,6 +118,8 @@ class SitemapParser
             throw new SitemapParserException(SitemapParserException::UNABLE_SET_CHARECTER_TO . self::ENCODING);
         }
         $this->userAgent = $userAgent;
+        $this->config = $this->getEnvConfig();
+        var_dump($_SERVER);die();
     }
 
     /**
@@ -412,7 +429,7 @@ class SitemapParser
                     }
                 }
                 if (self::XML_TAG_URL == $type) {
-                    $headersBlocks = $this->parsePage($tags['loc']);
+                    $headersBlocks = $this->parseWebPage($tags['loc']);
                     if (!empty($headersBlocks)) {
                         $tags = array_merge($tags, $headersBlocks);
 
@@ -437,19 +454,36 @@ class SitemapParser
      * @throws SitemapParserException
      * @throws TransferException
      */
-    private function parsePage(string $url): array
+    private function parseWebPage(string $url): array
     {
         $array = [];
         $htmlString = $this->getContent($url);
-        preg_match('/<h1[^>]*>\s*(.*?)\s*<\/h1>/i', $htmlString, $mathesH1);
-        if (!empty($mathesH1[1])) {
-            $array['h1'] = $mathesH1[1];
-        }
-        preg_match('/<h2[^>]*>\s*(.*?)\s*<\/h2>/i', $htmlString, $mathesH2);
-        if (!empty($mathesH2[1])) {
-            $array['h2'] = $mathesH2[1];
+        if (!empty($this->config[self::PARSER_TYPE])) {
+            switch ($this->config[self::PARSER_TYPE]) {
+                case self::PARSER_TYPE_REGULAR_EXPRESS:
+                default:
+                $array['h1'] = $this->getValueByRegularExpression(self::H1_REGULAR_EXPRES, $htmlString);
+                $array['h2'] = $this->getValueByRegularExpression(self::H2_REGULAR_EXPRES, $htmlString);
+                    break;
+                case self::PARSER_TYPE_XML_DOM:
+                    $xmlElement = $this->generateXMLObject($htmlString);
+                    var_dump($xmlElement);die();
+                    break;
+            }
         }
 
+
         return $array;
+    }
+
+    /**
+     * Collect bucket of settings from .env to set up app
+     * @return array
+     */
+    private function getEnvConfig(): array
+    {
+        return [
+            self::PARSER_TYPE =>  getenv('PARSER_TYPE', true),
+        ];
     }
 }
