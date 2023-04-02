@@ -121,7 +121,6 @@ class SitemapParser
         }
         $this->config = $this->getEnvConfig();
         $this->userAgent = !empty($this->config[self::USER_AGENT]) ? $this->config[self::USER_AGENT] : self::DEFAULT_USER_AGENT;
-       var_dump($this->userAgent);die();
         if (empty($this->config[self::XML_TAG_URL])) {
             throw new SitemapParserException(SitemapParserException::INVALID_URL);
         }
