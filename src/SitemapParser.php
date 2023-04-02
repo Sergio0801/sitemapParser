@@ -3,8 +3,7 @@
 namespace app\src;
 
 use Exception;
-use app\src\exceptions\{SitemapParserException};
-use app\src\exceptions\TransferException;
+use app\src\exceptions\{SitemapParserException, TransferException};
 use SimpleXMLElement;
 
 
