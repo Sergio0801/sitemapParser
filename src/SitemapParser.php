@@ -1,16 +1,12 @@
 <?php
 
-namespace parsers;
-
-require 'UrlParser.php';
-require 'HTMLParser.php';
-require 'CurlRequest.php';
-require 'exceptions/SitemapParserException.php';
-require 'exceptions/TransferException.php';
+namespace app\src;
 
 use Exception;
-use parsers\exceptions\{SitemapParserException, TransferException};
+use app\src\exceptions\{SitemapParserException};
+use app\src\exceptions\TransferException;
 use SimpleXMLElement;
+
 
 /**
  *  SitemapParser class
@@ -48,7 +44,9 @@ class SitemapParser
     /**
      * XML URL tag
      */
-    private const XML_TAG_URL = 'url';
+    private const XML_TAG_URL = 'URL';
+
+    private const USER_AGENT = 'USER_AGENT';
 
     /**
      * PARSER_TYPE
@@ -81,6 +79,12 @@ class SitemapParser
     protected string $userAgent;
 
     /**
+     * User-Agent to send with every HTTP(S) request
+     * @var string
+     */
+    protected string $siteMapUrl;
+
+    /**
      * Configuration options to parse websites
      *
      * @var array
@@ -108,18 +112,20 @@ class SitemapParser
     /**
      * Constructor
      *
-     * @param string $userAgent User-Agent to send with every HTTP(S) request
      * @throws SitemapParserException
      */
-    public function __construct(string $userAgent = self::DEFAULT_USER_AGENT)
+    public function __construct()
     {
         mb_language("uni");
         if (!mb_internal_encoding(self::ENCODING)) {
             throw new SitemapParserException(SitemapParserException::UNABLE_SET_CHARECTER_TO . self::ENCODING);
         }
-        $this->userAgent = $userAgent;
         $this->config = $this->getEnvConfig();
-        var_dump($_SERVER);die();
+        $this->userAgent = !empty($this->config[self::USER_AGENT]) ? $this->config[self::USER_AGENT] : self::DEFAULT_USER_AGENT;
+        if (empty($this->config[self::XML_TAG_URL])) {
+            throw new SitemapParserException(SitemapParserException::INVALID_URL);
+        }
+        $this->siteMapUrl = $this->config[self::XML_TAG_URL];
     }
 
     /**
@@ -145,13 +151,12 @@ class SitemapParser
     /**
      * Parse Recursive
      *
-     * @param string $url
      * @return void
      * @throws SitemapParserException
      */
-    public function parseRecursive(string $url): void
+    public function parseRecursive(): void
     {
-        $this->addToQueue([$url]);
+        $this->addToQueue([$this->siteMapUrl]);
         $this->clean();
         while (count($todo = $this->getQueue()) > 0) {
             $sitemaps = $this->sitemaps;
@@ -432,7 +437,6 @@ class SitemapParser
                     $headersBlocks = $this->parseWebPage($tags['loc']);
                     if (!empty($headersBlocks)) {
                         $tags = array_merge($tags, $headersBlocks);
-
                     }
                 }
 
@@ -462,12 +466,13 @@ class SitemapParser
             switch ($this->config[self::PARSER_TYPE]) {
                 case self::PARSER_TYPE_REGULAR_EXPRESS:
                 default:
-                $array['h1'] = $this->getValueByRegularExpression(self::H1_REGULAR_EXPRES, $htmlString);
-                $array['h2'] = $this->getValueByRegularExpression(self::H2_REGULAR_EXPRES, $htmlString);
+                    $array['h1'] = $this->getValueByRegularExpression(self::H1_REGULAR_EXPRES, $htmlString);
+                    $array['h2'] = $this->getValueByRegularExpression(self::H2_REGULAR_EXPRES, $htmlString);
                     break;
                 case self::PARSER_TYPE_XML_DOM:
                     $xmlElement = $this->generateXMLObject($htmlString);
-                    var_dump($xmlElement);die();
+                    var_dump($xmlElement);
+                    die();
                     break;
             }
         }
@@ -483,7 +488,9 @@ class SitemapParser
     private function getEnvConfig(): array
     {
         return [
-            self::PARSER_TYPE =>  getenv('PARSER_TYPE', true),
+            self::PARSER_TYPE => getenv(self::XML_TAG_URL),
+            self::XML_TAG_URL => getenv(self::XML_TAG_URL),
+            self::USER_AGENT => getenv(self::USER_AGENT),
         ];
     }
 }
