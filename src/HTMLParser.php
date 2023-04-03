@@ -2,6 +2,8 @@
 
 namespace app\src;
 
+use DOMDocument;
+
 trait HTMLParser
 {
     /**
@@ -19,8 +21,21 @@ trait HTMLParser
         return null;
     }
 
-    protected function getValueByXmlDomParser(string $htmlString)
+    /**
+     * @param string $htmlString
+     * @return null[]
+     */
+    protected function getValueByXmlDomParser(string $htmlString): array
     {
-       // $parser = new DOMParser();
+        $xmlDoc = new DOMDocument();
+        $xmlDoc->loadHTML($htmlString);
+        $h1Element = $xmlDoc->getElementsByTagName('h1')[0];
+        $h2Element = $xmlDoc->getElementsByTagName('h1')[0];
+        $array = [
+            'h1' => !is_null($h1Element) ? $h1Element->nodeValue : null,
+            'h2' => !is_null($h2Element) ? $h2Element->nodeValue : null
+        ];
+        unset($xmlDoc, $h1Element, $h2Element);
+        return $array;
     }
 }

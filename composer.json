@@ -1,8 +1,6 @@
 {
-    "name": "Sitemap Parser",
     "description": "This script checks a sitemap.xml file and retrieves all URLs and generates a list of URLs and h1 and h2 headers on each URL",
     "keywords": ["parser", "xmlParser", "sitemap"],
-    "homepage": "/",
     "autoload" : {
         "psr-4": {
             "app\\src\\": "src"
@@ -10,6 +8,7 @@
     },
     "require": {
         "php": ">=7.4",
-        "vlucas/phpdotenv": "^5.5"
+        "vlucas/phpdotenv": "^5.5",
+        "ext-simplexml": "*"
     }
 }

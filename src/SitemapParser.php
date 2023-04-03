@@ -43,8 +43,12 @@ class SitemapParser
     /**
      * XML URL tag
      */
-    private const XML_TAG_URL = 'URL';
+    private const XML_TAG_URL = 'url';
 
+    private const URL = 'URL';
+    /**
+     * Env variable
+     */
     private const USER_AGENT = 'USER_AGENT';
 
     /**
@@ -121,10 +125,10 @@ class SitemapParser
         }
         $this->config = $this->getEnvConfig();
         $this->userAgent = !empty($this->config[self::USER_AGENT]) ? $this->config[self::USER_AGENT] : self::DEFAULT_USER_AGENT;
-        if (empty($this->config[self::XML_TAG_URL])) {
+        if (empty($this->config[self::URL])) {
             throw new SitemapParserException(SitemapParserException::INVALID_URL);
         }
-        $this->siteMapUrl = $this->config[self::XML_TAG_URL];
+        $this->siteMapUrl = $this->config[self::URL];
     }
 
     /**
@@ -329,9 +333,10 @@ class SitemapParser
         // strip XML comments from files
         // if they occur at the beginning of the file it will invalidate the XML
         // this occurs with certain versions of Yoast
-        $xml = preg_replace('/\s*\<\!\-\-((?!\-\-\>)[\s\S])*\-\-\>\s*/', '', (string)$xml);
+       // $xml = preg_replace('/\s*\<\!\-\-((?!\-\-\>)[\s\S])*\-\-\>\s*/', '', (string)$xml);
         try {
             libxml_use_internal_errors(true);
+
             return new SimpleXMLElement($xml, LIBXML_NOCDATA);
         } catch (Exception $e) {
             return false;
@@ -419,6 +424,7 @@ class SitemapParser
                 $tags = ["namespaces" => []];
 
                 foreach ($nameSpaces as $nameSpace => $value) {
+
                     if ($nameSpace != "") {
                         $tags["namespaces"] = array_merge(
                             $tags["namespaces"],
@@ -469,13 +475,10 @@ class SitemapParser
                     $array['h2'] = $this->getValueByRegularExpression(self::H2_REGULAR_EXPRES, $htmlString);
                     break;
                 case self::PARSER_TYPE_XML_DOM:
-                    $xmlElement = $this->generateXMLObject($htmlString);
-                    var_dump($xmlElement);
-                    die();
+                    $array = $this->getValueByXmlDomParser($htmlString);
                     break;
             }
         }
-
 
         return $array;
     }
@@ -487,8 +490,8 @@ class SitemapParser
     private function getEnvConfig(): array
     {
         return [
-            self::PARSER_TYPE => getenv(self::XML_TAG_URL),
-            self::XML_TAG_URL => getenv(self::XML_TAG_URL),
+            self::PARSER_TYPE => getenv(self::PARSER_TYPE),
+            self::URL => getenv(self::URL),
             self::USER_AGENT => getenv(self::USER_AGENT),
         ];
     }
