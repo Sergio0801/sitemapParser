@@ -1,6 +1,6 @@
 <?php
 
-namespace parsers\exceptions;
+namespace app\src\exceptions;
 
 /**
  * TransferException class

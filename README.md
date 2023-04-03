@@ -16,8 +16,10 @@ line in a table on the page.
 ~~~
 LAUNCH
 You must have at least php version 7.4 installed to run
-
-
+1) git clone [project-url]
+2) composer install
+3) create empty .env file 
+2) copy file .env.example to .env and add your settings
 ~~~
 
 

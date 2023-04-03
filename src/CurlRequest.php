@@ -1,6 +1,6 @@
 <?php
 
-namespace parsers;
+namespace app\src;
 
 /**
  * CurlRequest class

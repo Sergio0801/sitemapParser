@@ -1,6 +1,6 @@
 <?php
 
-namespace parsers;
+namespace app\src;
 
 /**
  * View class
@@ -30,11 +30,14 @@ class View
         return <<<HTML
 <html>
 <head>
+<title>Map of Urls and Headers</title>
 <style>{$this->css}</style>
 </head>
 <body>
+<div class="container">
 <div class="table">
 {$this->rows}
+</div>
 </div>
 </body>
 </html>
@@ -65,6 +68,10 @@ HTML;
     protected function setCSS()
     {
        $this->css = <<<CSS
+    .container {
+           width: 90%;
+           margin: 0 auto;
+    }
     .table {
             display:table;
             width: 100%;

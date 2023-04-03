@@ -1,15 +1,11 @@
 <?php
 
-namespace parsers;
-
-require 'UrlParser.php';
-require 'CurlRequest.php';
-require 'exceptions/SitemapParserException.php';
-require 'exceptions/TransferException.php';
+namespace app\src;
 
 use Exception;
-use parsers\exceptions\{SitemapParserException, TransferException};
+use app\src\exceptions\{SitemapParserException, TransferException};
 use SimpleXMLElement;
+
 
 /**
  *  SitemapParser class
@@ -17,6 +13,7 @@ use SimpleXMLElement;
 class SitemapParser
 {
     use UrlParser;
+    use HTMLParser;
 
     /**
      * Default User-Agent
@@ -48,6 +45,24 @@ class SitemapParser
      */
     private const XML_TAG_URL = 'url';
 
+    private const URL = 'URL';
+    /**
+     * Env variable
+     */
+    private const USER_AGENT = 'USER_AGENT';
+
+    /**
+     * PARSER_TYPE
+     */
+    private const PARSER_TYPE = 'PARSER_TYPE';
+    private const PARSER_TYPE_XML_DOM = 1;
+    private const PARSER_TYPE_REGULAR_EXPRESS = 2;
+
+
+    /*REGULAR EXPRESSIONS*/
+    private const H1_REGULAR_EXPRES = '/<h1[^>]*>\s*(.*?)\s*<\/h1>/i';
+    private const H2_REGULAR_EXPRES = '/<h2[^>]*>\s*(.*?)\s*<\/h2>/i';
+
     /**
      * Sitemaps discovered
      * @var array
@@ -67,7 +82,14 @@ class SitemapParser
     protected string $userAgent;
 
     /**
-     * Configuration options
+     * User-Agent to send with every HTTP(S) request
+     * @var string
+     */
+    protected string $siteMapUrl;
+
+    /**
+     * Configuration options to parse websites
+     *
      * @var array
      */
     protected array $config = [];
@@ -93,16 +115,20 @@ class SitemapParser
     /**
      * Constructor
      *
-     * @param string $userAgent User-Agent to send with every HTTP(S) request
      * @throws SitemapParserException
      */
-    public function __construct(string $userAgent = self::DEFAULT_USER_AGENT)
+    public function __construct()
     {
         mb_language("uni");
         if (!mb_internal_encoding(self::ENCODING)) {
             throw new SitemapParserException(SitemapParserException::UNABLE_SET_CHARECTER_TO . self::ENCODING);
         }
-        $this->userAgent = $userAgent;
+        $this->config = $this->getEnvConfig();
+        $this->userAgent = !empty($this->config[self::USER_AGENT]) ? $this->config[self::USER_AGENT] : self::DEFAULT_USER_AGENT;
+        if (empty($this->config[self::URL])) {
+            throw new SitemapParserException(SitemapParserException::INVALID_URL);
+        }
+        $this->siteMapUrl = $this->config[self::URL];
     }
 
     /**
@@ -128,13 +154,12 @@ class SitemapParser
     /**
      * Parse Recursive
      *
-     * @param string $url
      * @return void
      * @throws SitemapParserException
      */
-    public function parseRecursive(string $url): void
+    public function parseRecursive(): void
     {
-        $this->addToQueue([$url]);
+        $this->addToQueue([$this->siteMapUrl]);
         $this->clean();
         while (count($todo = $this->getQueue()) > 0) {
             $sitemaps = $this->sitemaps;
@@ -308,9 +333,10 @@ class SitemapParser
         // strip XML comments from files
         // if they occur at the beginning of the file it will invalidate the XML
         // this occurs with certain versions of Yoast
-        $xml = preg_replace('/\s*\<\!\-\-((?!\-\-\>)[\s\S])*\-\-\>\s*/', '', (string)$xml);
+       // $xml = preg_replace('/\s*\<\!\-\-((?!\-\-\>)[\s\S])*\-\-\>\s*/', '', (string)$xml);
         try {
             libxml_use_internal_errors(true);
+
             return new SimpleXMLElement($xml, LIBXML_NOCDATA);
         } catch (Exception $e) {
             return false;
@@ -398,6 +424,7 @@ class SitemapParser
                 $tags = ["namespaces" => []];
 
                 foreach ($nameSpaces as $nameSpace => $value) {
+
                     if ($nameSpace != "") {
                         $tags["namespaces"] = array_merge(
                             $tags["namespaces"],
@@ -412,10 +439,9 @@ class SitemapParser
                     }
                 }
                 if (self::XML_TAG_URL == $type) {
-                    $headersBlocks = $this->parsePage($tags['loc']);
+                    $headersBlocks = $this->parseWebPage($tags['loc']);
                     if (!empty($headersBlocks)) {
                         $tags = array_merge($tags, $headersBlocks);
-
                     }
                 }
 
@@ -437,19 +463,36 @@ class SitemapParser
      * @throws SitemapParserException
      * @throws TransferException
      */
-    private function parsePage(string $url): array
+    private function parseWebPage(string $url): array
     {
         $array = [];
         $htmlString = $this->getContent($url);
-        preg_match('/<h1[^>]*>\s*(.*?)\s*<\/h1>/i', $htmlString, $mathesH1);
-        if (!empty($mathesH1[1])) {
-            $array['h1'] = $mathesH1[1];
-        }
-        preg_match('/<h2[^>]*>\s*(.*?)\s*<\/h2>/i', $htmlString, $mathesH2);
-        if (!empty($mathesH2[1])) {
-            $array['h2'] = $mathesH2[1];
+        if (!empty($this->config[self::PARSER_TYPE])) {
+            switch ($this->config[self::PARSER_TYPE]) {
+                case self::PARSER_TYPE_REGULAR_EXPRESS:
+                default:
+                    $array['h1'] = $this->getValueByRegularExpression(self::H1_REGULAR_EXPRES, $htmlString);
+                    $array['h2'] = $this->getValueByRegularExpression(self::H2_REGULAR_EXPRES, $htmlString);
+                    break;
+                case self::PARSER_TYPE_XML_DOM:
+                    $array = $this->getArrayByDomParser($htmlString);
+                    break;
+            }
         }
 
         return $array;
+    }
+
+    /**
+     * Collect bucket of settings from .env to set up app
+     * @return array
+     */
+    private function getEnvConfig(): array
+    {
+        return [
+            self::PARSER_TYPE => getenv(self::PARSER_TYPE),
+            self::URL => getenv(self::URL),
+            self::USER_AGENT => getenv(self::USER_AGENT),
+        ];
     }
 }

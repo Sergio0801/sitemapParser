@@ -1,14 +1,20 @@
 <?php
+require(__DIR__ . '/vendor/autoload.php');
 
-require 'SitemapParser.php';
-require 'View.php';
+use Dotenv\Dotenv;
+use app\src\exceptions\SitemapParserException;
+use app\src\SitemapParser;
+use app\src\View;
 
-use parsers\SitemapParser;
-use parsers\View;
+
+
+$dotenv = Dotenv::createUnsafeImmutable(__DIR__ . '/.');
+$dotenv->safeLoad();
+
 
 try {
-    $parser = new SitemapParser('MyCustomUserAgent');
-    $parser->parseRecursive('https://biz.dinnerbooking.com/sitemap_index.xml');
+    $parser = new SitemapParser();
+    $parser->parseRecursive();
 
     $view = new View($parser->getURLs());
     echo $view->renderHTML();
