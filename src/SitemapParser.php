@@ -475,7 +475,7 @@ class SitemapParser
                     $array['h2'] = $this->getValueByRegularExpression(self::H2_REGULAR_EXPRES, $htmlString);
                     break;
                 case self::PARSER_TYPE_XML_DOM:
-                    $array = $this->getValueByXmlDomParser($htmlString);
+                    $array = $this->getArrayByDomParser($htmlString);
                     break;
             }
         }

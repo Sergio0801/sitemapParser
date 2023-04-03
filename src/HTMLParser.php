@@ -25,7 +25,7 @@ trait HTMLParser
      * @param string $htmlString
      * @return null[]
      */
-    protected function getValueByXmlDomParser(string $htmlString): array
+    protected function getArrayByDomParser(string $htmlString): array
     {
         $xmlDoc = new DOMDocument();
         $xmlDoc->loadHTML($htmlString);
@@ -36,6 +36,7 @@ trait HTMLParser
             'h2' => !is_null($h2Element) ? $h2Element->nodeValue : null
         ];
         unset($xmlDoc, $h1Element, $h2Element);
+
         return $array;
     }
 }
